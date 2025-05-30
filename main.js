@@ -1,6 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.module.js';
 import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/webxr/VRButton.js';
-import * as CANNON from 'https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js'; // cannon clásico no tiene export ES, usamos cannon-es
+import * as CANNON from 'https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js';
 
 let scene, camera, renderer;
 let bolaMesh, bolaBody;
@@ -42,7 +42,7 @@ function init() {
   scene.background = textureLoader.load(URLS.fondo);
 
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
-  camera.position.set(0, 1.6, 5);
+  camera.position.set(0, 1.6, 0); // Alinear con el origen de VR
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -98,7 +98,7 @@ function init() {
   bolaBody = new CANNON.Body({
     mass: 1,
     shape: new CANNON.Sphere(0.15),
-    position: new CANNON.Vec3(0, 0.15, 2),
+    position: new CANNON.Vec3(0, 0.15, -0.5), // Bola justo enfrente del jugador en VR
     linearDamping: 0.31
   });
   world.addBody(bolaBody);
@@ -138,7 +138,7 @@ function generarPosicionesPinos() {
   const posiciones = [];
   const filas = 4;
   const spacing = 0.5;
-  const zInicial = -5;
+  const zInicial = -4.5; // Alejamos los pinos un poco más
   for (let fila = 0; fila < filas; fila++) {
     const cantidad = fila + 1;
     const offsetX = -(cantidad - 1) * spacing / 2;
@@ -187,59 +187,6 @@ function animate() {
     for (let i = 0; i < pinos.length; i++) {
       pinos[i].position.copy(pinoBodies[i].position);
       pinos[i].quaternion.copy(pinoBodies[i].quaternion);
-    }
-
-    if (lanzada) {
-      const zFinal = -7;
-      const velocidadPequeña = bolaBody.velocity.length() < 0.05;
-
-      if ((bolaBody.position.z < zFinal || velocidadPequeña) && !bolaBody.reseteando) {
-        bolaBody.reseteando = true;
-
-        setTimeout(() => {
-          let caidos = 0;
-          for (let i = 0; i < pinoBodies.length; i++) {
-            const up = new CANNON.Vec3(0, 1, 0);
-            const pinUp = pinoBodies[i].quaternion.vmult(up);
-            if (pinUp.dot(up) < 0.7) caidos++;
-          }
-
-          if (caidos === 9) {
-            nivel++;
-            mostrarMensaje(`🎉 ¡Nivel ${nivel} alcanzado!`);
-          } else {
-            mostrarMensaje(`🎳 Tiraste ${caidos} pino(s)`);
-          }
-
-          ronda++;
-          if (ronda > rondasMax) {
-            mostrarMensaje("🏁 Juego terminado");
-            ronda = 1;
-            nivel = 1;
-          }
-
-          actualizarHUD();
-
-          bolaBody.position.set(0, 0.15, 2 + nivel * 1.5);
-          camera.position.set(0, 1.6, 5 + nivel * 1.5);
-          bolaBody.velocity.setZero();
-          bolaBody.angularVelocity.setZero();
-          bolaBody.quaternion.set(0, 0, 0, 1);
-          bolaMesh.quaternion.set(0, 0, 0, 1);
-          lanzada = false;
-          bolaBody.reseteando = false;
-
-          const alturaPino = 0.4;
-          const centroY = alturaPino / 2;
-          const posiciones = generarPosicionesPinos();
-          for (let i = 0; i < posiciones.length; i++) {
-            pinoBodies[i].position.set(posiciones[i].x, centroY, posiciones[i].z);
-            pinoBodies[i].velocity.setZero();
-            pinoBodies[i].angularVelocity.setZero();
-            pinoBodies[i].quaternion.setFromEuler(0, 0, 0);
-          }
-        }, 2500);
-      }
     }
 
     renderer.render(scene, camera);

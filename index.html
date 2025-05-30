@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bowling VR Game</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: black; }
+    #vrstatus, #mensaje {
+      position: absolute;
+      color: white;
+      font-size: 20px;
+      font-family: sans-serif;
+      padding: 10px;
+      background: rgba(0,0,0,0.6);
+    }
+    #vrstatus { bottom: 10px; left: 10px; color: orange; }
+    #mensaje { top: 10px; left: 10px; display: none; }
+  </style>
+</head>
+<body>
+  <div id="hud" style="
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 8px 14px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-family: monospace;
+  font-size: 14px;
+  border-radius: 6px;
+  z-index: 10;">
+  Nivel: 1<br>Ronda: 1/5
+</div>
+
+<div id="mensaje" style="
+  position: absolute;
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: #222;
+  color: #0f0;
+  padding: 10px 18px;
+  font-size: 16px;
+  border-radius: 8px;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 20;
+  font-family: monospace;">
+</div>
+
+
+
+  <!-- Three.js y Cannon.js como scripts clásicos -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/cannon@0.6.2/build/cannon.min.js"></script>
+
+  <!-- Tu script después de que las librerías ya están cargadas -->
+  <script src="main.js"></script>
+</body>
+</html>

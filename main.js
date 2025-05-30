@@ -1,5 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.module.js';
 import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/webxr/VRButton.js';
+import { XRControllerModelFactory } from 'https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/webxr/XRControllerModelFactory.js';
 import * as CANNON from 'https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js';
 
 let scene, camera, renderer;
@@ -102,17 +103,18 @@ function init() {
   });
   world.addBody(bolaBody);
 
-  const controller1 = renderer.xr.getController(0);
-  const controller2 = renderer.xr.getController(1);
+  const controllerModelFactory = new XRControllerModelFactory();
 
-  controller1.addEventListener('selectstart', () => agarrarBola(controller1));
-  controller1.addEventListener('selectend', soltarBola);
+  for (let i = 0; i <= 1; i++) {
+    const controller = renderer.xr.getController(i);
+    controller.addEventListener('selectstart', () => agarrarBola(controller));
+    controller.addEventListener('selectend', soltarBola);
+    scene.add(controller);
 
-  controller2.addEventListener('selectstart', () => agarrarBola(controller2));
-  controller2.addEventListener('selectend', soltarBola);
-
-  scene.add(controller1);
-  scene.add(controller2);
+    const grip = renderer.xr.getControllerGrip(i);
+    grip.add(controllerModelFactory.createControllerModel(grip));
+    scene.add(grip);
+  }
 
   const alturaPino = 0.4;
   const centroY = alturaPino / 2;

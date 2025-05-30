@@ -5,9 +5,8 @@ import * as CANNON from 'https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cann
 let scene, camera, renderer;
 let bolaMesh, bolaBody;
 let pinos = [], pinoBodies = [], ronda = 1, rondasMax = 5, nivel = 1;
-let dragging = false, lastMouse = null, lastWorldPos = null;
 let world;
-let lanzada = false;
+let agarrando = false, controladorActivo = null, posicionInicialControlador = null;
 
 const textureLoader = new THREE.TextureLoader();
 
@@ -42,7 +41,7 @@ function init() {
   scene.background = textureLoader.load(URLS.fondo);
 
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
-  camera.position.set(0, 1.6, 0); // Alinear con el origen de VR
+  camera.position.set(0, 1.6, 0);
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -98,10 +97,22 @@ function init() {
   bolaBody = new CANNON.Body({
     mass: 1,
     shape: new CANNON.Sphere(0.15),
-    position: new CANNON.Vec3(0, 0.15, -0.5), // Bola justo enfrente del jugador en VR
+    position: new CANNON.Vec3(0, 0.15, -0.5),
     linearDamping: 0.31
   });
   world.addBody(bolaBody);
+
+  const controller1 = renderer.xr.getController(0);
+  const controller2 = renderer.xr.getController(1);
+
+  controller1.addEventListener('selectstart', () => agarrarBola(controller1));
+  controller1.addEventListener('selectend', soltarBola);
+
+  controller2.addEventListener('selectstart', () => agarrarBola(controller2));
+  controller2.addEventListener('selectend', soltarBola);
+
+  scene.add(controller1);
+  scene.add(controller2);
 
   const alturaPino = 0.4;
   const centroY = alturaPino / 2;
@@ -127,18 +138,37 @@ function init() {
     pinoBodies.push(pinoBody);
   });
 
-  renderer.domElement.addEventListener('pointerdown', onPointerDown);
-  renderer.domElement.addEventListener('pointermove', onPointerMove);
-  renderer.domElement.addEventListener('pointerup', onPointerUp);
-
   actualizarHUD();
+}
+
+function agarrarBola(controlador) {
+  if (!controlador) return;
+  const pos = new THREE.Vector3();
+  controlador.getWorldPosition(pos);
+  bolaBody.velocity.setZero();
+  bolaBody.angularVelocity.setZero();
+  bolaBody.position.set(pos.x, pos.y, pos.z);
+  agarrando = true;
+  controladorActivo = controlador;
+  posicionInicialControlador = pos.clone();
+}
+
+function soltarBola() {
+  if (!agarrando || !controladorActivo) return;
+  const nuevaPos = new THREE.Vector3();
+  controladorActivo.getWorldPosition(nuevaPos);
+  const impulso = nuevaPos.clone().sub(posicionInicialControlador).multiplyScalar(10);
+  bolaBody.velocity.set(impulso.x, impulso.y, impulso.z);
+  agarrando = false;
+  controladorActivo = null;
+  posicionInicialControlador = null;
 }
 
 function generarPosicionesPinos() {
   const posiciones = [];
   const filas = 4;
   const spacing = 0.5;
-  const zInicial = -4.5; // Alejamos los pinos un poco más
+  const zInicial = -4.5;
   for (let fila = 0; fila < filas; fila++) {
     const cantidad = fila + 1;
     const offsetX = -(cantidad - 1) * spacing / 2;
@@ -149,37 +179,15 @@ function generarPosicionesPinos() {
   return posiciones;
 }
 
-function onPointerDown(event) {
-  dragging = true;
-  lastMouse = { x: event.clientX, y: event.clientY };
-  lastWorldPos = bolaBody.position.clone();
-  bolaBody.velocity.setZero();
-  bolaBody.angularVelocity.setZero();
-  event.preventDefault();
-}
-
-function onPointerMove(event) {
-  if (!dragging) return;
-  const deltaX = (event.clientX - lastMouse.x) * 0.01;
-  const deltaZ = (event.clientY - lastMouse.y) * 0.01;
-  bolaBody.position.x = lastWorldPos.x + deltaX;
-  bolaBody.position.z = lastWorldPos.z + deltaZ;
-  event.preventDefault();
-}
-
-function onPointerUp(event) {
-  if (!dragging) return;
-  dragging = false;
-  const deltaX = (event.clientX - lastMouse.x) * 0.4;
-  const deltaZ = (event.clientY - lastMouse.y) * 0.4;
-  bolaBody.velocity.set(deltaX, 0, deltaZ);
-  lanzada = true;
-  event.preventDefault();
-}
-
 function animate() {
   renderer.setAnimationLoop(() => {
     world.step(1 / 60);
+
+    if (agarrando && controladorActivo) {
+      const pos = new THREE.Vector3();
+      controladorActivo.getWorldPosition(pos);
+      bolaBody.position.set(pos.x, pos.y, pos.z);
+    }
 
     bolaMesh.position.copy(bolaBody.position);
     bolaMesh.quaternion.copy(bolaBody.quaternion);

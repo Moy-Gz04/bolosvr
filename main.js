@@ -1,4 +1,6 @@
-// Juego de bolos completo con niveles, HUD visual, mensajes animados y soporte VR sin módulos ES para compatibilidad total
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.module.js';
+import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/webxr/VRButton.js';
+import * as CANNON from 'https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js'; // cannon clásico no tiene export ES, usamos cannon-es
 
 let scene, camera, renderer;
 let bolaMesh, bolaBody;
@@ -6,7 +8,6 @@ let pinos = [], pinoBodies = [], ronda = 1, rondasMax = 5, nivel = 1;
 let dragging = false, lastMouse = null, lastWorldPos = null;
 let world;
 let lanzada = false;
-let controller1;
 
 const textureLoader = new THREE.TextureLoader();
 
@@ -17,19 +18,6 @@ const URLS = {
   bola: 'https://threejs.org/examples/textures/metal.jpg',
   pino: 'https://threejs.org/examples/textures/brick_diffuse.jpg'
 };
-
-function cargarVRButton() {
-  const script = document.createElement('script');
-  script.src = 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/vr/VRButton.js';
-  script.onload = () => {
-    if (typeof VRButton !== 'undefined') {
-      document.body.appendChild(VRButton.createButton(renderer));
-    } else {
-      console.error('VRButton no disponible');
-    }
-  };
-  document.body.appendChild(script);
-}
 
 function actualizarHUD() {
   document.getElementById("hud").innerHTML = `Nivel: ${nivel}<br>Ronda: ${ronda}/${rondasMax}`;
@@ -60,22 +48,9 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.xr.enabled = true;
   document.body.appendChild(renderer.domElement);
-  cargarVRButton();
+  document.body.appendChild(VRButton.createButton(renderer));
 
-  const vrStatus = document.createElement('div');
-  vrStatus.id = 'vrstatus';
-  vrStatus.style.position = 'absolute';
-  vrStatus.style.bottom = '10px';
-  vrStatus.style.left = '10px';
-  vrStatus.style.background = 'rgba(0,0,0,0.7)';
-  vrStatus.style.color = 'orange';
-  vrStatus.style.padding = '6px 10px';
-  vrStatus.style.fontFamily = 'monospace';
-  vrStatus.style.fontSize = '14px';
-  vrStatus.style.borderRadius = '4px';
-  vrStatus.innerText = 'Cargando VR...';
-  document.body.appendChild(vrStatus);
-
+  const vrStatus = document.getElementById('vrstatus');
   if (navigator.xr) {
     navigator.xr.isSessionSupported('immersive-vr').then(supported => {
       vrStatus.innerText = supported ? '✅ VR disponible' : '⚠️ WebXR activo pero sin visor';
@@ -86,8 +61,7 @@ function init() {
     vrStatus.style.color = '#ff0000';
   }
 
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-  scene.add(ambientLight);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.4));
   const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
   directionalLight.position.set(0, 10, 5);
   scene.add(directionalLight);
@@ -107,8 +81,7 @@ function init() {
   pista.position.set(0, 0.01, -1.5);
   scene.add(pista);
 
-  world = new CANNON.World();
-  world.gravity.set(0, -9.82, 0);
+  world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.82, 0) });
 
   const groundBody = new CANNON.Body({
     mass: 0,

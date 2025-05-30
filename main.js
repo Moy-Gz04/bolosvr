@@ -1,4 +1,4 @@
-import { XRControllerModelFactory } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/webxr/XRControllerModelFactory.js';
+// Juego de bolos completo con niveles, HUD visual, mensajes animados y soporte VR sin módulos ES para compatibilidad total
 
 let scene, camera, renderer;
 let bolaMesh, bolaBody;
@@ -154,39 +154,6 @@ function init() {
     pinoBodies.push(pinoBody);
   });
 
-  controller1 = renderer.xr.getController(0);
-  scene.add(controller1);
-
-  const controllerGrip1 = renderer.xr.getControllerGrip(0);
-  const controllerModelFactory = new XRControllerModelFactory();
-  controllerGrip1.add(controllerModelFactory.createControllerModel(controllerGrip1));
-  scene.add(controllerGrip1);
-
-  controller1.addEventListener('selectstart', () => {
-    const bolaPos = new THREE.Vector3().copy(bolaMesh.position);
-    const controladorPos = new THREE.Vector3();
-    controller1.getWorldPosition(controladorPos);
-    const distancia = bolaPos.distanceTo(controladorPos);
-    if (distancia < 0.3) {
-      bolaBody.velocity.setZero();
-      bolaBody.angularVelocity.setZero();
-      bolaBody.position.copy(controladorPos);
-      bolaBody.quaternion.copy(controller1.quaternion);
-      bolaBody.isHeld = true;
-    }
-  });
-
-  controller1.addEventListener('selectend', () => {
-    if (bolaBody.isHeld) {
-      bolaBody.isHeld = false;
-      const vel = new THREE.Vector3();
-      controller1.getWorldDirection(vel);
-      vel.multiplyScalar(-4);
-      bolaBody.velocity.set(vel.x, vel.y, vel.z);
-      lanzada = true;
-    }
-  });
-
   renderer.domElement.addEventListener('pointerdown', onPointerDown);
   renderer.domElement.addEventListener('pointermove', onPointerMove);
   renderer.domElement.addEventListener('pointerup', onPointerUp);
@@ -240,12 +207,6 @@ function onPointerUp(event) {
 function animate() {
   renderer.setAnimationLoop(() => {
     world.step(1 / 60);
-
-    if (bolaBody.isHeld) {
-      const pos = new THREE.Vector3();
-      controller1.getWorldPosition(pos);
-      bolaBody.position.copy(pos);
-    }
 
     bolaMesh.position.copy(bolaBody.position);
     bolaMesh.quaternion.copy(bolaBody.quaternion);
